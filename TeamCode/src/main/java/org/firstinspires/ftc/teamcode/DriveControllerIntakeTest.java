@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -47,9 +46,12 @@ public class DriveControllerIntakeTest extends LinearOpMode {
     private boolean intakeOpen = true;
 
     private Servo rightWrist;
+    private double rightWristPosition;
     private Servo leftWrist;
+    private double leftWristPosition;
 
-    private double wristPosition = 0.0;
+
+    private double wristPosition = 0.5;
 
 
 //    @Override
@@ -92,10 +94,17 @@ public class DriveControllerIntakeTest extends LinearOpMode {
 
 
 
+
+
         printToTablet("Initialized");
 
         waitForStart();
         runtime.reset();
+
+        intakePivot.setPosition(-0.5);
+
+        rightWristPosition = rightWrist.getPosition();
+        leftWristPosition = leftWrist.getPosition();
 
 
         while (opModeIsActive()) {
@@ -112,7 +121,7 @@ public class DriveControllerIntakeTest extends LinearOpMode {
         if (gamepad1.square != pivotControl && gamepad1.square) {
             pivotUp = !pivotUp;
             if (pivotUp) {
-                intakePivot.setPosition(1.0);
+                intakePivot.setPosition(.65);
             }
             else {
                 intakePivot.setPosition(-0.5);
@@ -123,28 +132,40 @@ public class DriveControllerIntakeTest extends LinearOpMode {
         if (gamepad1.cross != intakeControl && gamepad1.cross) {
             intakeOpen = !intakeOpen;
             if (intakeOpen) {
-                intakeServo.setPower(1);
+                while (gamepad1.cross) {
+                    intakeServo.setPower(1);
+                }
+                intakeServo.setPower(0);
             }
             else {
-                intakeServo.setPower(-1);
+                while (gamepad1.cross) {
+                    intakeServo.setPower(-1);
+                }
+                intakeServo.setPower(0);
             }
         }
         intakeControl = gamepad1.cross;
 
+
+
         if (gamepad1.circle) {
-            if (gamepad1.right_trigger > 0) {
-                wristPosition += 0.001;
-            }
-            if (gamepad1.left_trigger > 0) {
-                wristPosition -= 0.001;
-            }
+            wristPosition -= (gamepad1.right_trigger - gamepad1.left_trigger) / 1000;
             wristPosition = Math.min(Math.max(wristPosition, -1),1);
             leftWrist.setPosition(wristPosition);
-            rightWrist.setPosition(-wristPosition);
-            printToTablet("Wrist", String.valueOf(wristPosition));
+            rightWrist.setPosition(1-wristPosition);
+            printToTablet("left", String.valueOf(leftWrist.getPosition()));
+            printToTablet("right", String.valueOf(rightWrist.getPosition()));
+            printToTablet("pos", String.valueOf(wristPosition));
         }
         else {
-            armMotor.setPower(armSpeed * (gamepad1.right_trigger * 2) - gamepad1.left_trigger);
+            armMotor.setPower(
+                    0 + (
+                            armSpeed * (
+                                    .1 * (Math.pow(gamepad1.right_trigger,3) * 5) - (Math.pow(gamepad1.left_trigger,3) * .1)
+                            )
+                    )
+
+            );
         }
 
 
