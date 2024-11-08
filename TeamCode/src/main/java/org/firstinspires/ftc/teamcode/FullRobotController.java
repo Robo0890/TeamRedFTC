@@ -1,18 +1,23 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorGroup;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.configuration.ConfigurationType;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.List;
+import java.util.Timer;
 
 
-@TeleOp(name="Strobel Robot Controller", group="Linear OpMode")
+@TeleOp(name="Full Robot Controller", group="Linear OpMode")
 
 public class FullRobotController extends LinearOpMode {
 
@@ -20,55 +25,44 @@ public class FullRobotController extends LinearOpMode {
     private DcMotor leftBackDrive;
     private DcMotor rightFrontDrive;
     private DcMotor rightBackDrive;
-    private DcMotor rightSlide;
-    private DcMotor leftSlide;
-    private MotorGroup linearSlide;
+
+    private DcMotorEx rightSlide;
+    private DcMotorEx leftSlide;
+
+    private int SLIDE_MIN;
+    private int SLIDE_MAX;
 
     private DcMotor armMotor;
 
     private Servo intakePivot;
     private CRServo intakeServo;
 
-    private boolean pivotOpen= true;
-    private boolean previousSquarePress = false;
-    private boolean intakeActive = false;
-    private boolean outtakeActive = false;
-    private boolean previousXPress = false;
-    private boolean previousOPress = false;
-    private ElapsedTime intakeTimer = new ElapsedTime();
-
-    private static final double RUN_DURATION = 3.0; // Duration in seconds
 
     private ElapsedTime runtime = new ElapsedTime();
 
-    private double armSpeed = 1;
-    private int slideSpeed = 2;
+    private int slideSpeed = 40;
 
-    private int armPosition = 2;
+    private double armSpeed = 3;
 
     private boolean pivotControl = false;
     private boolean pivotUp = false;
-
     private boolean intakeControl = false;
     private boolean intakeOpen = true;
-
     private Servo rightWrist;
-    private double rightWristPosition;
     private Servo leftWrist;
-    private double leftWristPosition;
+
+
 
 
     private double wristPosition = 0.5;
+    private int rightSlideOffset;
+    private int slidePosition;
+
+
 
     //Controller effects
 
 
-
-//    @Override
-//    public void init() {
-//        telemetry.addData("Initialization:", "success");
-//        telemetry.update(pres);
-//    }
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -79,26 +73,40 @@ public class FullRobotController extends LinearOpMode {
         rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFrontDrive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "rightBackDrive");
 
-        armMotor = hardwareMap.get(DcMotor.class, "armMotor");
-        rightSlide = hardwareMap.get(DcMotor.class, "rightSlide");
-        leftSlide = hardwareMap.get(DcMotor.class, "leftSlide");
-        intakePivot = hardwareMap.get(Servo.class, "intakePivot");
-        intakeServo = hardwareMap.get(CRServo.class, "intakeServo");
         leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
 
-        rightSlide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        leftSlide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightSlide = hardwareMap.get(DcMotorEx.class, "rightSlide");
+        leftSlide = hardwareMap.get(DcMotorEx.class, "leftSlide");
+
+        armMotor = hardwareMap.get(DcMotor.class, "armMotor");
+
+        intakePivot = hardwareMap.get(Servo.class, "intakePivot");
+        intakeServo = hardwareMap.get(CRServo.class, "intakeServo");
+
+        rightSlide = hardwareMap.get(DcMotorEx.class, "rightSlide");
+        leftSlide = hardwareMap.get(DcMotorEx.class, "leftSlide");
+
+        rightSlide.setTargetPosition(0);
+        leftSlide.setTargetPosition(0);
+
+        rightSlide.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        leftSlide.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+
+        rightSlideOffset = rightSlide.getCurrentPosition();
+
+        slidePosition = 0;
+
+        SLIDE_MIN = slidePosition;
+        SLIDE_MAX = SLIDE_MIN + 10000;
+
+        rightWrist = hardwareMap.get(Servo.class, "rightWrist");
+        leftWrist = hardwareMap.get(Servo.class, "leftWrist");
 
 
-
-        double kP = 20;
-        double kV = 0.7;
-        linearSlide.setVeloCoefficients(kP, 0, 0);
-        linearSlide.setFeedforwardCoefficients(0, kV);
-
+        armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
         printToTablet("Initialized");
@@ -107,8 +115,13 @@ public class FullRobotController extends LinearOpMode {
         runtime.reset();
 
 
-        gamepad1.setLedColor(125, 218, 88, 3000);
+        gamepad1.setLedColor(125, 218, 88, -1);
         gamepad1.rumbleBlips(2);
+
+        leftWrist.setPosition(wristPosition);
+        rightWrist.setPosition(1 - wristPosition);
+
+        intakePivot.setPosition(0);
 
 
         while (opModeIsActive()) {
@@ -122,27 +135,22 @@ public class FullRobotController extends LinearOpMode {
 
     public void gameTick(){
 
-        // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
-        double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-        double lateral =  gamepad1.left_stick_x;
-        double yaw     =  gamepad1.right_stick_x;
-        double speed;
-        double max;
-
 
         //intake pivot toggle
-        if (gamepad1.square != pivotControl && gamepad1.square) {
+        if (gamepad1.cross != pivotControl && gamepad1.cross) {
             pivotUp = !pivotUp;
+            gamepad1.rumble(.3,.3,50);
             if (pivotUp) {
                 //90 degree position
-                intakePivot.setPosition(.65);
+                intakePivot.setPosition(.35);
             }
             else {
                 //zero position
-                intakePivot.setPosition(-0.5);
+                intakePivot.setPosition(0);
             }
+            printToTablet(String.valueOf(pivotUp));
         }
-        pivotControl = gamepad1.square;
+        pivotControl = gamepad1.cross;
 
 
         //Idk if we are gonna keep this part tbh, just a proof of concept
@@ -150,48 +158,31 @@ public class FullRobotController extends LinearOpMode {
         //Next press goes the opposite direction
         //TODO: Think of other ways to do this, D-pad is a decent option
         //BTW: We have access to the trackpad in the middle of the controller ¯\_(ツ)_/¯
-        if (gamepad1.cross != intakeControl && gamepad1.cross) {
-            intakeOpen = !intakeOpen;
-            if (intakeOpen) {
-                while (gamepad1.cross) {
-                    intakeServo.setPower(1);
-                    //TODO: Haptic controller feedback
-                    gamepad1.rumble(.05,.05,10);
-                }
-                intakeServo.setPower(0);
-                gamepad1.setLedColor(255, 255, 255, -1);
-            }
-            else {
-                while (gamepad1.cross) {
-                    intakeServo.setPower(-1);
-                    gamepad1.rumble(.05,.05,10);
-                }
-                intakeServo.setPower(0);
-                gamepad1.setLedColor(0, 0, 0, -1);
-            }
+
+        if (gamepad1.dpad_down) {
+            intakeServo.setPower(1);
         }
-        intakeControl = gamepad1.cross;
+        else if (gamepad1.dpad_up) {
+            intakeServo.setPower(-1);
+        }
+        else {
+            intakeServo.setPower(0);
+        }
 
 
 
 
         //Arm control
-        if (gamepad1.circle) {
+        if (gamepad1.square) {
             //Pivot calculation
             //Maybe I look at doing something similar to the calc for the big arm movements
-            wristPosition -= (gamepad1.right_trigger - gamepad1.left_trigger) / 1000;
+            wristPosition -= (gamepad1.right_trigger - gamepad1.left_trigger) / 200;
             wristPosition = Math.min(Math.max(wristPosition, -1),1);
 
             //fuck servos
             leftWrist.setPosition(wristPosition);
             rightWrist.setPosition(1 - wristPosition);
 
-            if (gamepad1.left_trigger > .5) {
-                gamepad1.rumble(.1,0,10);
-            }
-            if (gamepad1.right_trigger < .5) {
-                gamepad1.rumble(0,.1,10);
-            }
 
 
             printToTablet("left", String.valueOf(leftWrist.getPosition()));
@@ -206,22 +197,56 @@ public class FullRobotController extends LinearOpMode {
                     (
                             //Motor speed should be exponentially related to trigger strength
                             armSpeed * (
-                                    .1 * (Math.pow(gamepad1.right_trigger,3) * 5) - (Math.pow(gamepad1.left_trigger,3) * .1)
+                                    .1 * (Math.pow(gamepad1.right_trigger,10) * 5) - (Math.pow(gamepad1.left_trigger,10) * .1)
                             )
                     )
 
             );
             armMotor.setPower(armPower);
-            if (gamepad1.left_trigger > .5) {
-                gamepad1.rumble(.5,0,10);
-            }
-            if (gamepad1.right_trigger < .5) {
-                gamepad1.rumble(0,.5,10);
-            }
 
         }
 
         //TODO: Linear slide. Some working code exists somewhere in old versions of the "DriveController.java" file. But I didn't like it.
+        if (gamepad1.left_bumper || gamepad1.right_bumper) {
+            if (gamepad1.left_bumper) {
+                slidePosition -= slideSpeed;
+                gamepad1.rumble(1,0,100);
+            }
+            if (gamepad1.right_bumper) {
+                slidePosition += slideSpeed;
+                gamepad1.rumble(0,1,100);
+            }
+            slidePosition =  Math.min(Math.max(slidePosition,SLIDE_MIN),SLIDE_MAX);
+            setSlidePosition(
+                    slidePosition
+            );
+        }
+        rightSlide.setVelocity(5000);
+        leftSlide.setVelocity(5000);
+
+        if (gamepad1.dpad_left) {
+            slidePosition = SLIDE_MIN;
+            setSlidePosition(SLIDE_MIN);
+        }
+        if (gamepad1.dpad_right) {
+            slidePosition = SLIDE_MAX;
+            setSlidePosition(SLIDE_MAX);
+        }
+
+
+        printToTablet("Position", String.valueOf(slidePosition));
+
+
+        printToTablet("RightSlidePos", String.valueOf(rightSlide.getCurrentPosition()));
+        printToTablet("LeftSlidePos", String.valueOf(leftSlide.getCurrentPosition()));
+
+
+        // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
+        double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+        double lateral =  gamepad1.left_stick_x;
+        double yaw     =  gamepad1.right_stick_x;
+        double speed;
+        double max;
 
         //Sprint function
         if (gamepad1.left_stick_button) {
@@ -238,10 +263,10 @@ public class FullRobotController extends LinearOpMode {
 
         // Combine the joystick requests for each axis-motion to determine each wheel's power.
         // Set up a variable for each drive wheel to save the power level for telemetry.
-        double leftFrontPower  = (axial + lateral) * speed + yaw;
-        double rightFrontPower = (axial - lateral) * speed - yaw;
-        double leftBackPower   = (axial - lateral) * speed + yaw;
-        double rightBackPower  = (axial + lateral) * speed - yaw;
+        double leftFrontPower  = ((axial + lateral) + yaw) * speed;
+        double rightFrontPower = ((axial - lateral) - yaw) * speed;
+        double leftBackPower   = ((axial - lateral) + yaw) * speed;
+        double rightBackPower  = ((axial + lateral) - yaw) * speed;
 
 
         // Normalize the values so no wheel power exceeds 100%
@@ -264,6 +289,12 @@ public class FullRobotController extends LinearOpMode {
         leftBackDrive.setPower(leftBackPower);
         rightBackDrive.setPower(rightBackPower);
 
+    }
+
+    private void setSlidePosition(int position) {
+        position *= -1;
+        rightSlide.setTargetPosition(position - rightSlideOffset);
+        leftSlide.setTargetPosition(-(position));
     }
 
 

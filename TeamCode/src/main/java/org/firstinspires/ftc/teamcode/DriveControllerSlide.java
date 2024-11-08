@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.List;
 
 
-@TeleOp(name="Strobel DriveController Testing", group="Linear OpMode")
+@TeleOp(name="Strobel Slide Testing", group="Linear OpMode")
 
 public class DriveControllerSlide extends LinearOpMode {
 
@@ -45,7 +45,9 @@ public class DriveControllerSlide extends LinearOpMode {
     private double armSpeed = 1;
     private int slideSpeed = 2;
 
-    private int armPosition = 2;
+    private int slidePosition = 0;
+    private int rightSlideOffset;
+    private int leftSlideOffset;
 
 
 //    @Override
@@ -74,8 +76,16 @@ public class DriveControllerSlide extends LinearOpMode {
         rightSlide = hardwareMap.get(DcMotorEx.class, "rightSlide");
         leftSlide = hardwareMap.get(DcMotorEx.class, "leftSlide");
 
-        rightSlide.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        leftSlide.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        rightSlide.setTargetPosition(0);
+        leftSlide.setTargetPosition(0);
+
+        rightSlide.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        leftSlide.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+
+        leftSlideOffset = leftSlide.getCurrentPosition();
+        rightSlideOffset = rightSlide.getCurrentPosition();
+
+
 
 
 
@@ -108,21 +118,27 @@ public class DriveControllerSlide extends LinearOpMode {
         //min is 2, max is -7550
         int direction = 0;
 
-        if (gamepad1.right_bumper) {
-            rightSlide.setVelocity(1);
-            leftSlide.setVelocity(-1);
+        if (gamepad1.left_bumper || gamepad1.right_bumper) {
+            if (gamepad1.left_bumper) {
+                slidePosition -= 50;
+            }
+            if (gamepad1.right_bumper) {
+                slidePosition += 50;
+            }
+            slidePosition =  Math.min(Math.max(slidePosition,10),12200);
+            setSlidePosition(
+                    slidePosition
+            );
         }
-        else if (gamepad1.left_bumper) {
-            rightSlide.setVelocity(-1);
-            leftSlide.setVelocity(1);
-        }
-        else {
-            rightSlide.setVelocity(0);
-            leftSlide.setVelocity(0);
-        }
+        rightSlide.setVelocity(5000);
+        leftSlide.setVelocity(5000);
 
-        printToTablet("RightSlideVelo", String.valueOf(rightSlide.getVelocity()));
-        printToTablet("LeftSlideVelo", String.valueOf(leftSlide.getVelocity()));
+
+        printToTablet("Position", String.valueOf(slidePosition));
+
+
+        printToTablet("RightSlidePos", String.valueOf(rightSlide.getCurrentPosition()));
+        printToTablet("LeftSlidePos", String.valueOf(leftSlide.getCurrentPosition()));
 
 
         if (gamepad1.right_stick_button) {
@@ -162,6 +178,12 @@ public class DriveControllerSlide extends LinearOpMode {
         leftBackDrive.setPower(leftBackPower);
         rightBackDrive.setPower(rightBackPower);
 
+    }
+
+    private void setSlidePosition(int position) {
+        position *= -1;
+        rightSlide.setTargetPosition(position - rightSlideOffset);
+        leftSlide.setTargetPosition(-(position - leftSlideOffset));
     }
 
 
