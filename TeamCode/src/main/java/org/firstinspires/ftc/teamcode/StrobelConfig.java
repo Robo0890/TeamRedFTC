@@ -20,7 +20,7 @@ public class StrobelConfig extends LinearOpMode {
     private boolean crouchDown = false;
     private boolean isCrouching = false;
 
-    private int armPostion;
+    private int armPostion = 0;
 
     private int SLIDE_MIN;
     private int SLIDE_MAX;
@@ -63,71 +63,20 @@ public class StrobelConfig extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
-        //Mapping
-        leftFrontDrive = hardwareMap.get(DcMotor.class, "leftFrontDrive");
-        leftBackDrive = hardwareMap.get(DcMotor.class, "leftBackDrive");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFrontDrive");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "rightBackDrive");
-
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
-
-        armMotor = hardwareMap.get(DcMotor.class, "armMotor");
-
-        intakePivot = hardwareMap.get(Servo.class, "intakePivot");
-        intakeServo = hardwareMap.get(CRServo.class, "intakeServo");
-
-
-        slidePosition = 0;
-
-        SLIDE_MIN = slidePosition;
-        SLIDE_MAX = SLIDE_MIN + 10000;
-
-        rightWrist = hardwareMap.get(Servo.class, "rightWrist");
-        leftWrist = hardwareMap.get(Servo.class, "leftWrist");
-
-
-        armPostion = armMotor.getCurrentPosition();
-        armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-
-        printToTablet("Initialized");
-
-        waitForStart();
-        runtime.reset();
-
-
-        gamepad1.setLedColor(125, 218, 88, -1);
-        gamepad1.rumbleBlips(2);
-
-        leftWrist.setPosition(wristPosition);
-        rightWrist.setPosition(1 - wristPosition);
-
-        intakePivot.setPosition(0);
-
+        configureRobot();
+        gameStart();
 
         while (opModeIsActive()) {
-
-
             gameTick();
             telemetry.update();
-
         }
     }
 
     public void gameTick(){
 
-
-
-
-
         //Arm control
         if (gamepad1.square) {
-            //Pivot calculation
-            //Maybe I look at doing something similar to the calc for the big arm movements
+
             wristPosition += (gamepad1.right_trigger - gamepad1.left_trigger) / 1000;
             wristPosition = Math.min(Math.max(wristPosition, -1),1);
 
@@ -142,21 +91,6 @@ public class StrobelConfig extends LinearOpMode {
             printToTablet("pos", String.valueOf(wristPosition));
         }
         else {
-
-            //Calculate big arm movement
-//            double armPower = (
-//                    (
-//                            //Motor speed should be exponentially related to trigger strength
-//                            armSpeed * -(
-//                                    (gamepad1.right_trigger * 1) - (gamepad1.left_trigger) * 1)
-//                    )
-//            );
-//            armPostion -= armPower;
-//            armMotor.setTargetPosition(armPostion);
-//            armMotor.setPower(1);
-//
-//            printToTablet("Position", String.valueOf(armPostion));
-//            printToTablet("Power", String.valueOf(armPower));
             double armPower = (
                     (
                             //Motor speed should be exponentially related to trigger strength
@@ -166,7 +100,7 @@ public class StrobelConfig extends LinearOpMode {
                     )
 
             );
-            armMotor.setPower(armPower);
+            setArmPostion((int) (armPostion + armPower));
 
             if (armPower != 0) {
                 gamepad1.rumble(armPower, -armPower, 2);
@@ -283,9 +217,66 @@ public class StrobelConfig extends LinearOpMode {
 
     }
 
+    public void configureRobot() {
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "leftFrontDrive");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "leftBackDrive");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFrontDrive");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "rightBackDrive");
+
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        intakePivot = hardwareMap.get(Servo.class, "intakePivot");
+        intakeServo = hardwareMap.get(CRServo.class, "intakeServo");
+
+        rightWrist = hardwareMap.get(Servo.class, "rightWrist");
+        leftWrist = hardwareMap.get(Servo.class, "leftWrist");
+
+        armMotor = hardwareMap.get(DcMotor.class, "armMotor");
+        armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
+    }
 
+    public void gameStart() {
+
+        //Mapping
+
+        armPostion = armMotor.getCurrentPosition();
+
+        printToTablet("Initialized");
+
+        waitForStart();
+        runtime.reset();
+
+
+        gamepad1.setLedColor(125, 218, 88, -1);
+        gamepad1.rumbleBlips(2);
+
+        leftWrist.setPosition(wristPosition);
+        rightWrist.setPosition(1 - wristPosition);
+
+        intakePivot.setPosition(0);
+    }
+
+    private void setArmPostion(int postion) {
+        armPostion = armMotor.getCurrentPosition();
+        if (armPostion - postion < 10) {
+
+        }
+        else if (armPostion < postion) {
+            armMotor.setPower(armPostion-postion);
+            setArmPostion(postion);
+        }
+        else {
+            armMotor.setPower(postion-armPostion);
+            setArmPostion(postion);
+        }
+
+    }
     //Utility functions
     public void printToTablet(String label, String msg) {
         telemetry.addData(label, msg);
