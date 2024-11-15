@@ -4,14 +4,13 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name="First Comp Contoller", group="Linear OpMode")
+@TeleOp(name="Strobel Comp Contoller", group="Linear OpMode")
 
-public class LegacyController extends LinearOpMode {
+public class StrobelConfig extends LinearOpMode {
 
     private DcMotor leftFrontDrive;
     private DcMotor leftBackDrive;
