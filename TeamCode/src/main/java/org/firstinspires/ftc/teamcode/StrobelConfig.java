@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-@TeleOp(name="Strobel Comp Contoller", group="Linear OpMode")
+@TeleOp(name="Strobel's Comp Config", group="Linear OpMode")
 
 public class StrobelConfig extends LinearOpMode {
 
@@ -38,7 +38,7 @@ public class StrobelConfig extends LinearOpMode {
 
     private int slideSpeed = 40;
 
-    private double armSpeed = .5;
+    private double armSpeed = 5;
 
     private boolean pivotControl = false;
     private boolean pivotUp = false;
@@ -46,6 +46,17 @@ public class StrobelConfig extends LinearOpMode {
     private boolean intakeOpen = true;
     private Servo rightWrist;
     private Servo leftWrist;
+
+    boolean groundingInput;
+
+    ElapsedTime groundingTimer = new ElapsedTime();
+
+    boolean scoringInput;
+
+    ElapsedTime scoringTimer = new ElapsedTime();
+
+    boolean intakeSucking = false;
+    boolean intakeSpitting = false;
 
 
 
@@ -77,7 +88,7 @@ public class StrobelConfig extends LinearOpMode {
         //Arm control
         if (gamepad1.square) {
 
-            wristPosition += (gamepad1.right_trigger - gamepad1.left_trigger) / 1000;
+            wristPosition -= (gamepad1.right_trigger - gamepad1.left_trigger) / 1000;
             wristPosition = Math.min(Math.max(wristPosition, -1),1);
 
             //fuck servos
@@ -89,42 +100,89 @@ public class StrobelConfig extends LinearOpMode {
             printToTablet("left", String.valueOf(leftWrist.getPosition()));
             printToTablet("right", String.valueOf(rightWrist.getPosition()));
             printToTablet("pos", String.valueOf(wristPosition));
+
+            armMotor.setPower((armPostion - armMotor.getCurrentPosition()) * .1);
         }
         else {
-            double armPower = (
-                    (
-                            //Motor speed should be exponentially related to trigger strength
-                            armSpeed * (
-                                    (Math.pow(gamepad1.right_trigger,10) * 5) - (Math.pow(gamepad1.left_trigger,10) * 5)
-                            )
-                    )
+            double armPower = (armSpeed * (
+                                                (Math.pow(gamepad1.right_trigger,10) * 5) - (Math.pow(gamepad1.left_trigger,10) * 5)
+                                        ));
+            armPostion += armPower;
 
-            );
-            setArmPostion((int) (armPostion + armPower));
+            //armMotor.setPower(armPower);
+            armMotor.setPower((armPostion - armMotor.getCurrentPosition()) * .1);
+
+
+            printToTablet("armTarget", String.valueOf(armPostion));
+            printToTablet("armPosition", String.valueOf(armMotor.getCurrentPosition()));
+            printToTablet("armInput", String.valueOf(armPower));
+            printToTablet("armPower", String.valueOf(armPostion - armMotor.getCurrentPosition()));
+            printToTablet("Wrist Position", String.valueOf(wristPosition));
 
             if (armPower != 0) {
-                gamepad1.rumble(armPower, -armPower, 2);
+                gamepad1.rumble(-armPower / 2, armPower / 2, 2);
             }
 
+            if (gamepad1.left_trigger > .5) {
+                if (!groundingInput) {
+                    if (groundingTimer.seconds() < .25) {
+                        armPostion = 30;
+                        wristPosition = .4;
+
+                        leftWrist.setPosition(wristPosition);
+                        rightWrist.setPosition(1 - wristPosition);
+
+                        gamepad1.rumble(.5,.5,1000);
+                    }
+
+                }
+                groundingTimer.reset();
+            }
+            groundingInput = gamepad1.left_trigger > .5;
+
+            if (gamepad1.right_trigger > .5) {
+                if (!scoringInput) {
+                    if (scoringTimer.seconds() < .25) {
+                        armPostion = 425;
+                        wristPosition = .5;
+
+                        leftWrist.setPosition(wristPosition);
+                        rightWrist.setPosition(1 - wristPosition);
+
+                        gamepad1.rumble(.5,.5,1000);
+                    }
+
+                }
+                scoringTimer.reset();
+            }
+            scoringInput = gamepad1.right_trigger > .5;
+
         }
+
+
 
 
         //intake pivot toggle
-        if (gamepad1.cross != pivotControl && gamepad1.cross) {
-            pivotUp = !pivotUp;
-            samplePos = false;
-            gamepad1.rumble(.3,.3,50);
-            if (pivotUp) {
-                //90 degree position
-                intakePivot.setPosition(.35);
+        if (gamepad1.cross) {
+            if (!pivotControl) {
+                pivotUp = !pivotUp;
+                samplePos = false;
+                gamepad1.rumble(.3, .3, 50);
+                if (pivotUp) {
+                    //90 degree position
+                    intakePivot.setPosition(.35);
+
+                } else {
+                    //zero position
+                    intakePivot.setPosition(0);
+                }
             }
-            else {
-                //zero position
-                intakePivot.setPosition(0);
-            }
-            printToTablet(String.valueOf(pivotUp));
         }
         pivotControl = gamepad1.cross;
+
+
+        printToTablet(String.valueOf(pivotUp));
+
 
         if (gamepad1.triangle && !samplePosToggle) {
             samplePos = !samplePos;
@@ -132,6 +190,7 @@ public class StrobelConfig extends LinearOpMode {
         samplePosToggle = gamepad1.triangle;
 
         if (samplePos) {
+            printToTablet("Sample");
             pivotUp = true;
             intakePivot.setPosition(.35 / 2);
             armMotor.setPower(.1);
@@ -140,16 +199,29 @@ public class StrobelConfig extends LinearOpMode {
 
         //Intake wheel control
         if (gamepad1.dpad_down) {
-            intakeServo.setPower(1);
-            gamepad1.rumble(.1,.1,10);
+            if (!intakeSucking) {
+                if (intakeServo.getPower() == 1) {
+                    intakeServo.setPower(0);
+                } else {
+                    intakeServo.setPower(1);
+                }
+            }
         }
-        else if (gamepad1.dpad_up) {
+        intakeSucking = gamepad1.dpad_down;
+
+        if (gamepad1.dpad_up) {
             intakeServo.setPower(-1);
-            gamepad1.rumble(.1,.1,10);
+            intakeSpitting = true;
         }
-        if (gamepad1.dpad_left) {
-            intakeServo.setPower(0);
+        else {
+            if (intakeSpitting) {
+                intakeServo.setPower(0);
+                intakeSpitting = false;
+            }
         }
+
+
+
 
 
        // printToTablet("Position", String.valueOf(slidePosition));
@@ -215,6 +287,8 @@ public class StrobelConfig extends LinearOpMode {
         leftBackDrive.setPower(leftBackPower);
         rightBackDrive.setPower(rightBackPower);
 
+        printToTablet("Pivot", String.valueOf(intakePivot.getPosition()));
+
     }
 
     public void configureRobot() {
@@ -247,6 +321,7 @@ public class StrobelConfig extends LinearOpMode {
 
         armPostion = armMotor.getCurrentPosition();
 
+
         printToTablet("Initialized");
 
         waitForStart();
@@ -263,16 +338,16 @@ public class StrobelConfig extends LinearOpMode {
     }
 
     private void setArmPostion(int postion) {
-        armPostion = armMotor.getCurrentPosition();
-        if (armPostion - postion < 10) {
+        int currentPosition = armMotor.getCurrentPosition();
+        if (currentPosition - postion < 10) {
 
         }
-        else if (armPostion < postion) {
-            armMotor.setPower(armPostion-postion);
+        else if (currentPosition < postion) {
+            armMotor.setPower(currentPosition-postion);
             setArmPostion(postion);
         }
         else {
-            armMotor.setPower(postion-armPostion);
+            armMotor.setPower(postion-currentPosition);
             setArmPostion(postion);
         }
 

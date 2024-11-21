@@ -100,7 +100,7 @@ public class RylandsConfiguration extends LinearOpMode {
         runtime.reset();
 
 
-        gamepad1.setLedColor(125, 218, 88, -1);
+        gamepad1.setLedColor(255, 0, 0, -1);
         gamepad1.rumbleBlips(2);
 
         leftWrist.setPosition(wristPosition);
@@ -168,9 +168,6 @@ public class RylandsConfiguration extends LinearOpMode {
             );
             armMotor.setPower(armPower);
 
-            if (armPower != 0) {
-                gamepad1.rumble(armPower, -armPower, 2);
-            }
 
         }
 
@@ -179,7 +176,7 @@ public class RylandsConfiguration extends LinearOpMode {
         if (gamepad1.cross != pivotControl && gamepad1.cross) {
             pivotUp = !pivotUp;
             samplePos = false;
-            gamepad1.rumble(.3,.3,50);
+            gamepad1.rumble(.3,.3,25);
             if (pivotUp) {
                 //90 degree position
                 intakePivot.setPosition(.35);
@@ -207,11 +204,9 @@ public class RylandsConfiguration extends LinearOpMode {
         //Intake wheel control
         if (gamepad1.dpad_down) {
             intakeServo.setPower(1);
-            gamepad1.rumble(.1,.1,10);
         }
         else if (gamepad1.dpad_up) {
             intakeServo.setPower(-1);
-            gamepad1.rumble(.1,.1,10);
         }
         if (gamepad1.dpad_left) {
             intakeServo.setPower(0);
@@ -231,10 +226,10 @@ public class RylandsConfiguration extends LinearOpMode {
             isCrouching = !isCrouching;
             crouchDown = true;
             if (isCrouching) {
-                gamepad1.rumble(.1,.1,100);
+                gamepad1.rumble(.1,.1,50);
             }
             else {
-                gamepad1.rumble(.1,.1,50);
+                gamepad1.rumble(.1,.1,25);
             }
         }
         else if (!gamepad1.right_stick_button)  {
