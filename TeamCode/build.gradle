@@ -28,5 +28,22 @@ android {
 
 dependencies {
     implementation project(':FtcRobotController')
-    implementation 'org.ftclib.ftclib:core:2.1.1' // core
+    implementation 'org.ftclib.ftclib:core:2.1.1'
+    implementation 'com.google.firebase:firebase-crashlytics-buildtools:3.0.2'// core
+
+    implementation 'com.google.guava:guava:33.3.1-jre'
+
+
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22") {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    }
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
+    implementation 'com.acmerobotics.roadrunner:core:0.5.6'
+
 }
+
+
+

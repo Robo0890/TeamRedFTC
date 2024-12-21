@@ -1,0 +1,8 @@
+movement_axial:left_stick_y,
+movement_lateral:left_stick_x,
+movement_yaw:right_stick_x,
+intakeExtend:y,
+intakeDrop:dpad_up,
+intakeSuck:dpad_down,
+intakeWristDown:b,
+clawPivot:left_trigger,

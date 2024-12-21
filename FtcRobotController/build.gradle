@@ -17,7 +17,7 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    compileSdk 30
+    compileSdk 35
 
 
     compileOptions {
@@ -26,5 +26,6 @@ android {
     }
     namespace = 'com.qualcomm.ftcrobotcontroller'
 }
+
 
 apply from: '../build.dependencies.gradle'

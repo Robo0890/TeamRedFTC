@@ -1,0 +1,11 @@
+keyframe:
+    program: "setIntakeExtension", 1.0
+    program: "setClawPivot", 1.0
+    wait: .1
+keyframe:
+    program: "setIntakeWrist", 1.0
+    wait: .1
+keyframe:
+    program: "setIntakePower", -1.0
+
+

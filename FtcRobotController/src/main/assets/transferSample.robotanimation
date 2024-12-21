@@ -1,0 +1,24 @@
+keyframe:
+    program: "setClawOpen", true
+    wait: .2
+keyframe:
+    program: "setIntakeExtension", .2
+    program: "setClawPivot", .57
+    wait: .5
+keyframe:
+    program: "setClawOpen", false
+    wait: .3
+keyframe:
+    program: "setIntakeExtension", 0.8
+    program: "setIntakePower", .5
+    wait: .3
+keyframe:
+    program: "setIntakeWrist", 0.0
+    program: "setIntakePower", 0.0
+    program: "setIntakeExtension", 0.5
+    program: "setClawPivot", 1.0
+    wait: .75
+keyframe:
+    program: "setIntakeExtension", 0.0
+
+
