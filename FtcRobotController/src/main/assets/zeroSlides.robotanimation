@@ -1,0 +1,17 @@
+keyframe:
+    program: "setIntakeWrist", 1.0
+    wait: .5
+keyframe:
+    program: "zeroSlides"
+keyframe:
+    program: "setIntakeWrist", 0.0
+    program: "setSlidePower", 1.0
+    wait: .75
+keyframe:
+    program: "setSlidePower", -0.8
+    wait: .25
+keyframe:
+    program: "setSlidePower", 0.0
+
+
+

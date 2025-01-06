@@ -22,6 +22,7 @@ public class LinearSlide implements Runnable{
         this.slideMotor = slideMotor;
         slideMotor.setTargetPosition(0);
         slideMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        slideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         zeroPosition = slideMotor.getCurrentPosition();
     }
 

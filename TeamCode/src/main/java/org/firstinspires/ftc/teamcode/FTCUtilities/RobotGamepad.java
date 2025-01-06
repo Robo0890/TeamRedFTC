@@ -190,7 +190,7 @@ public class RobotGamepad {
         else {
             toggledInputs.remove(actionName);
         }
-
+        update();
     }
 
     // Controller Mapping

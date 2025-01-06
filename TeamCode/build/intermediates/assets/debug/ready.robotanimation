@@ -1,0 +1,10 @@
+keyframe:
+    program: "setSlidePower", 1.0
+    program: "setClawOpen", false
+
+    wait: .5
+keyframe:
+    program: "setSlidePower", 0.0
+    program: "setIntakeWrist", 0.0
+    program: "setClawPivot", .2
+    program: "setIntakeExtension", 0.0

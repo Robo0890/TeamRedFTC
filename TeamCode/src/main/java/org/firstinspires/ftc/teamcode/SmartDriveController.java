@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.FTCUtilities.LinearSlide;
 import org.firstinspires.ftc.teamcode.FTCUtilities.LinearSlideGroup;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 @TeleOp(name = "Smart Drive Controller", group = "Linear OpMode")
 public class SmartDriveController extends LinearOpMode {
 
+    private ElapsedTime doubleClickTimer = new ElapsedTime();
 
     private DcMotor leftFrontDrive;
     private DcMotor rightFrontDrive;
@@ -55,6 +57,10 @@ public class SmartDriveController extends LinearOpMode {
 
     private Animation smartTransfer;
 
+    private Animation zeroSlides;
+
+    private Animation ready;
+
 
     private ArrayList<String[]> tabletData = new ArrayList<>();
 
@@ -88,6 +94,9 @@ public class SmartDriveController extends LinearOpMode {
 
         rightIntake = hardwareMap.get(CRServo.class, "rightIntakeWheel");
         leftIntake = hardwareMap.get(CRServo.class, "leftIntakeWheel");
+
+        rightIntake.setDirection(CRServo.Direction.REVERSE);
+        leftIntake.setDirection(CRServo.Direction.REVERSE);
 
         //intakeColorSensor = hardwareMap.get(ColorSensor.class, "intakeColorSensor");
 
@@ -143,24 +152,32 @@ public class SmartDriveController extends LinearOpMode {
         smartTransfer = new Animation(this);
         smartTransfer.fromAsset("transferSample.robotanimation");
 
+        zeroSlides = new Animation(this);
+        zeroSlides.fromAsset("zeroSlides.robotanimation");
+
+        ready = new Animation(this);
+        ready.fromAsset("ready.robotanimation");
+
 
         addTabletData("Animations: Ready");
 
     }
 
     private void ready() {
+        doubleClickTimer.startTime();
+
         leftSlide.setActive(true);
         rightSlide.setActive(true);
 
         //clawArm.setActive(true);
 
-        setClawOpen(false);
-        setClawPivot(.5);
-        setIntakeExtension(0);
-        setIntakeWrist(0);
-        setClawPivot(1);
+        addTabletData("Getting Ready...");
+
+        ready.play();
+        ready.waitForCompleted(5000);
 
         clearTablet();
+        addTabletData("Robot Ready!");
 
     }
 
@@ -173,12 +190,15 @@ public class SmartDriveController extends LinearOpMode {
                 if (getIntakeExtension() < .5) {
                     reachIntake.play();
                     smartController.overrideToggle("intakeIn", true);
+                    smartController.overrideToggle("intakeWrist", false);
                 }
                 else {
                     retractIntake.play();
                     smartController.overrideToggle("intakeIn", false);
+                    smartController.overrideToggle("intakeWrist", true);
                 }
             }
+
 
             if (smartController.isActionPressed("intakeOut")) {
                 smartController.overrideToggle("intakeIn", false);
@@ -212,15 +232,26 @@ public class SmartDriveController extends LinearOpMode {
 
             setTabletData("LeftSwitch", leftSlideLimit.getState());
 
-            //TODO: Get goons to install encoder cables for slides
-            if (smartController.isActionPressed("slideDown") && leftSlideLimit.getState())  {
-                setSlidePower(-.5);
+            if (smartController.isActionJustPressed("slideDown")) {
+                if (doubleClickTimer.seconds() < .2) {
+                    zeroSlides.play();
+                }
+                doubleClickTimer.reset();
             }
-            else if (smartController.isActionPressed("slideUp")) {
-                setSlidePower(.5);
+
+            if (smartController.isActionJustPressed("clawSet")) {
+                setClawPivot(.155);
             }
-            else {
-                setSlidePower(0);
+
+            if (!zeroSlides.isPlaying()) {
+
+                if (smartController.isActionPressed("slideDown") && leftSlideLimit.getState()) {
+                    setSlidePower(-.5);
+                } else if (smartController.isActionPressed("slideUp")) {
+                    setSlidePower(.5);
+                } else {
+                    setSlidePower(0);
+                }
             }
         }
 
@@ -344,6 +375,19 @@ public class SmartDriveController extends LinearOpMode {
 
     }
 
+
+    public void zeroSlides() {
+        while (leftSlideLimit.getState()) {
+            setSlidePower(-1);
+            smartController.update();
+            if (smartController.isActionPressed("slideUp")) {
+                setSlidePower(0);
+                return;
+            }
+        }
+        setSlidePower(0);
+    }
+
     public void waitForInput(@NonNull RobotGamepad controller, String actionName) {
         while (!controller.isActionPressed(actionName)) {
             controller.update();
@@ -371,7 +415,7 @@ public class SmartDriveController extends LinearOpMode {
 
     public void setIntakeWrist(double position) {
 
-        position = (position * .75) + .15;
+        position = (position * .745) + .25;
         intakeWrist.setPosition(position);
     }
 
