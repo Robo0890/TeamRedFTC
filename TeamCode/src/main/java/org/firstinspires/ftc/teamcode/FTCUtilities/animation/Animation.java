@@ -140,6 +140,12 @@ public class Animation implements Runnable {
 
                     action = new ProgramAction(opMode, methodName, argArray);
                 }
+                if (actionStructure[0].equals("move")) {
+
+                    String[] actionArgs = actionStructure[1].split(",");
+
+                    action = new MoveAction(opMode, Double.parseDouble(actionArgs[1]), Double.parseDouble(actionArgs[2]), Double.parseDouble(actionArgs[3]));
+                }
                 if (actionStructure[0].equals("wait")) {
                     action = new WaitAction(Double.parseDouble(actionStructure[1]));
                 }

@@ -328,7 +328,7 @@ public class SmartDriveController extends LinearOpMode {
         double turnSpeed = .5;
 
         if (leftExtendIntake.getPosition() > .5) {
-            turnSpeed /= 2;
+            turnSpeed /= 4;
         }
 
         if (smartController.isActionToggled("crouch")) {
@@ -402,20 +402,29 @@ public class SmartDriveController extends LinearOpMode {
 
     private double getIntakeExtension() {
         double position = leftExtendIntake.getPosition();
-        position = (position - .2) / .5;
+        double max = .55;
+        double min = .1;
+        double range = Math.abs(max - min);
+        position = (position - min) / range;
         return position;
     }
 
     public void setIntakeExtension(double position) {
-        position = (position * .45) + .1;
+        double max = .55;
+        double min = .1;
+        double range = Math.abs(max - min);
+        position = (position * range) + min;
         leftExtendIntake.setPosition(position);
         rightExtendIntake.setPosition(position);
+
 
     }
 
     public void setIntakeWrist(double position) {
-
-        position = (position * .745) + .25;
+        double max = .95;
+        double min = .2;
+        double range = Math.abs(max - min);
+        position = (position * range) + min;
         intakeWrist.setPosition(position);
     }
 
@@ -429,11 +438,11 @@ public class SmartDriveController extends LinearOpMode {
     }
 
     public void setClawOpen(boolean isOpen) {
-        if (!isOpen) {
-            clawGrip.setPosition(.55);
+        if (isOpen) {
+            clawGrip.setPosition(.325);
         }
         else {
-            clawGrip.setPosition(.425);
+            clawGrip.setPosition(.45);
         }
     }
 

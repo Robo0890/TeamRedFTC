@@ -1,12 +1,11 @@
 keyframe:
-    program: "setIntakeExtension", .57
-    program: "setClawPivot", 0.155
+    program: "setIntakeExtension", .375
+    program: "setClawPivot", 0.2
     program: "setIntakeWrist", 0.0
-    wait: 1
+    program: "setIntakePower", 0.0
+    wait: .4
 keyframe:
     program: "setClawOpen", true
-    wait: .2
-keyframe:
     program: "zeroSlides"
 keyframe:
     program: "setIntakePower", .5
@@ -14,15 +13,15 @@ keyframe:
 keyframe:
     program: "setClawOpen", false
     program: "setIntakePower", 0.0
-    wait: .3
+    wait: .1
 keyframe:
-    program: "setIntakeExtension", 0.7
+    program: "setIntakeExtension", .8
     program: "setIntakePower", .5
-    wait: .3
+    wait: .1
 keyframe:
     program: "setIntakePower", 0.0
     program: "setSlidePower", 1.0
-    wait: .25
+    wait: .4
 keyframe:
     program: "setIntakeExtension", 0.0
     program: "setIntakeWrist", 0.0
